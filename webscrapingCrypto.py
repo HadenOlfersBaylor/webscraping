@@ -28,6 +28,7 @@ ws['E1'] = '24hr % Change'
 ws['F1'] = 'Corresponding Price'
 
 crypto_rows = soup.findAll('tr')
+verse_list = []
 
 for x in range(1,6):
     td = crypto_rows[x].findAll('td')
@@ -39,8 +40,15 @@ for x in range(1,6):
     gross = float(td[6].text.replace(",","").replace("%",""))
 
     corr_price = price * (1+gross)
+    gross_price = corr_price - price
 
     print(f"{no}, {title}, {symbol}, {price}, {gross}, {corr_price}")
+
+    if gross_price >= 5:
+        verse_list += [f'{title}went up ${gross_price:,.2f}'] 
+
+    if gross_price <= -5:
+        verse_list += [f'{title}went down {gross_price:,.2f}'] 
 
     ws['A' + str(x+1)] = no
     ws['B' + str(x+1)] = title
@@ -69,3 +77,15 @@ for cell in ws['F:F']:
     
 
 wb.save('CryptoReport.xlsx')
+
+import keys
+from twilio.rest import Client
+
+client = Client(keys.accountSID, keys.auth_token)
+
+TwilioNumber = ' '
+
+mycellphone = ' '
+
+for verse in verse_list:
+    textmessage = client.messages.create(to=mycellphone, from_=TwilioNumber, body=verse)
